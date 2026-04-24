@@ -37,21 +37,37 @@ const Remote = {
     document.getElementById('rmt-' + channelId)?.classList.add('active-ch');
   },
 
+  tvOn: true,
+
   power() {
-    // Trigger static animation without switching channel
     const screen = document.getElementById('tvScreen');
-    if (screen) {
-      screen.classList.add('switching');
-      setTimeout(() => screen.classList.remove('switching'), 500);
+    const cabinet = document.getElementById('tvScreen')?.closest('.tv-cabinet');
+    if (this.tvOn) {
+      // Turn off — show CRT off effect
+      this.tvOn = false;
+      screen?.classList.add('switching');
+      setTimeout(() => {
+        screen?.classList.remove('switching');
+        document.querySelector('.tv-bezel')?.classList.add('tv-off');
+        // Mute audio
+        if (!Player.muted) App.toggleMute();
+      }, 450);
+    } else {
+      // Turn back on
+      this.tvOn = true;
+      document.querySelector('.tv-bezel')?.classList.remove('tv-off');
+      screen?.classList.add('switching');
+      setTimeout(() => screen?.classList.remove('switching'), 500);
     }
   },
 
   volUp() {
-    // Unmute if muted, otherwise just indicate (no JS volume control in iframes)
+    // Always unmute — explicit, not toggle
     if (Player.muted) App.toggleMute();
   },
 
   volDown() {
+    // Always mute — explicit, not toggle
     if (!Player.muted) App.toggleMute();
   },
 };
