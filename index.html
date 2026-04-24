@@ -10,6 +10,13 @@
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/retro.css">
   <link rel="stylesheet" href="css/stream.css">
+<style>
+.click-blocker{position:absolute;inset:0;z-index:10;cursor:default;background:transparent;}
+.tv-off #tvScreen iframe{visibility:hidden;}
+.tv-off #tvScreen::before{content:'';position:absolute;inset:0;z-index:5;background:#000;border-radius:6px;}
+.tv-off #tvScreen::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:4px;height:4px;background:#e8e0c0;border-radius:50%;box-shadow:0 0 20px 8px rgba(232,224,192,0.6);z-index:6;animation:crtOff .3s ease forwards;}
+@keyframes crtOff{0%{width:100%;height:100%;opacity:.8;border-radius:6px;top:0;left:0;transform:none;}50%{width:100%;height:4px;opacity:.5;top:50%;transform:translateY(-50%);}100%{width:4px;height:4px;opacity:0;top:50%;left:50%;transform:translate(-50%,-50%);}}
+</style>
 </head>
 <body class="retro">
 
@@ -46,6 +53,7 @@
           <iframe id="ytRetro" allow="autoplay; encrypted-media" allowfullscreen></iframe>
           <div class="scan-lines"></div>
           <div class="static-layer"></div>
+          <div class="click-blocker"></div>
         </div>
         <div class="tv-bottom">
           <div class="tv-brand-text">PUMPO</div>
@@ -61,14 +69,18 @@
       <div class="tv-stand"></div>
     </div>
 
-    <!-- VIRTUAL REMOTE -->
-    <div class="remote" id="remoteEl"></div>
+    <!-- VIRTUAL REMOTE / FOR YOU PANEL (toggles) -->
+    <div id="rightPanel" style="display:flex;flex-direction:column;gap:10px;align-items:center;">
+      <div class="remote" id="remoteEl"></div>
+      <div class="foryou-panel" id="forYouPanel" style="display:none;max-width:220px;width:100%;"></div>
+    </div>
 
   </div>
 
   <!-- STREAM LAYOUT: full-width player -->
-  <div class="stream-layout">
+  <div class="stream-layout" style="position:relative;">
     <iframe id="ytStream" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+    <div class="click-blocker"></div>
   </div>
 
   <!-- ── INFO BAR ── -->
@@ -100,8 +112,8 @@
     </div>
   </div>
 
-  <!-- ── PUMPO PICKS (AI CHANNEL) ── -->
-  <div class="foryou-panel" id="forYouPanel" style="display:none;">
+  <!-- Pumpo Picks panel moved to beside the TV remote -->
+  <div style="display:none;" id="forYouPanelDummy">
     <div class="fy-title">✨ Pumpo Picks — Tell me what you want to watch</div>
 
     <!-- Model toggle -->
