@@ -46,13 +46,19 @@ const App = {
     const ch = window.CHANNELS_DATA?.find(c => c.id === channelId);
     if (!ch) return;
 
-    // Show For You panel only when on that channel
-    document.getElementById('forYouPanel').style.display =
-      ch.ai ? '' : 'none';
+    // Show For You panel beside TV, hide remote when on AI channel
+    const remoteEl = document.getElementById('remoteEl');
+    const fyPanel = document.getElementById('forYouPanel');
+    if (ch.ai) {
+      if (remoteEl) remoteEl.style.display = 'none';
+      if (fyPanel) fyPanel.style.display = '';
+    } else {
+      if (remoteEl) remoteEl.style.display = '';
+      if (fyPanel) fyPanel.style.display = 'none';
+    }
 
     // If AI channel has no playlist yet, show panel and stop
     if (ch.ai && !ch.playlist?.length) {
-      document.getElementById('forYouPanel').style.display = '';
       this._updateChannelBarActive(channelId);
       Remote.updateActiveChannel(channelId);
       return;
@@ -129,7 +135,26 @@ const App = {
   _renderForYouPanel() {
     const panel = document.getElementById('forYouPanel');
     if (!panel) return;
-    panel.style.display = 'none'; // hidden until Pumpo Picks channel selected
+    panel.style.display = 'none';
+    panel.innerHTML = `
+      <div class="fy-title">✨ Pumpo Picks</div>
+      <div class="fy-model-toggle">
+        <button class="fy-model-btn active" data-m="gemini" onclick="AIChannel.setModel('gemini')">Gemini</button>
+        <button class="fy-model-btn" data-m="claude" onclick="AIChannel.setModel('claude')">Claude</button>
+      </div>
+      <div class="fy-key-row">
+        <input type="password" class="fy-key-input" id="fyKeyInput" placeholder="API key...">
+        <button class="fy-key-save" onclick="AIChannel.saveKey(AIChannel.model)">Save</button>
+      </div>
+      <textarea class="fy-input" id="fyPrompt" rows="3"
+        placeholder="What do you want to watch? e.g. calm cooking, TED talks, lo-fi music..."
+        style="width:100%;resize:vertical;font-size:12px;margin-bottom:6px;"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();App.generateForYou();}"></textarea>
+      <button class="fy-btn" id="fyBtn" onclick="App.generateForYou()" style="width:100%;">Generate ✦</button>
+      <div class="fy-status" id="fyStatus" style="margin-top:6px;">Enter a prompt and your API key to generate a personal playlist.</div>`;
+    const gk = localStorage.getItem('ptv_gemini_key') || localStorage.getItem('ptv_claude_key') || '';
+    const ki = document.getElementById('fyKeyInput');
+    if (ki && gk) ki.value = gk;
   },
 
   async generateForYou() {
