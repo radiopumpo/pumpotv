@@ -7,512 +7,139 @@
   <title>PumpoTV — 24/7 Live Channels</title>
   <link rel="icon" type="image/png" href="https://radiopumpo.github.io/radiopumpologo.png">
   <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Space+Mono:wght@400;700&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
-  <style>
-/* ── ROOT ─────────────────────────────────────── */
-:root {
-  --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
-  --pink:#ff0080; --cyan:#40e0d0; --amber:#ffaa00;
-  --text:#f0f0f0; --muted:#666; --dim:#222;
-  --border:rgba(255,255,255,0.08); --border2:rgba(255,255,255,0.15);
-  --mono:'Space Mono',monospace; --sans:'Rajdhani',sans-serif; --display:'Black Ops One',cursive;
-  /* retro palette */
-  --crt-bg:#080808; --crt-border:#2a2a1a; --crt-glow:rgba(255,200,50,0.08);
-  --crt-text:#e8e0c0; --crt-amber:#d4a843; --crt-scan:rgba(0,0,0,0.35);
-}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-html{-webkit-text-size-adjust:100%;}
-body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;-webkit-tap-highlight-color:transparent;transition:background .3s;}
-
-/* ── VIEW MODES ──────────────────────────────── */
-/* RETRO MODE overrides */
-body.retro { background:#1a1508; }
-body.retro .top-nav { background:rgba(15,12,5,0.97); border-bottom:1px solid #2a2010; }
-body.retro .nav-brand { color:var(--crt-amber); text-shadow:0 0 10px rgba(212,168,67,0.5); }
-body.retro .channel-btn { border-color:#2a2010; background:#0d0c08; }
-body.retro .channel-btn.active { border-color:var(--crt-amber); background:#1a1508; box-shadow:0 0 12px rgba(212,168,67,0.2); }
-body.retro .ch-num { color:var(--crt-amber); }
-body.retro .now-playing-bar { background:#0d0c08; border-color:#2a2010; }
-body.retro .epg-card { background:#0d0c08; border-color:#2a2010; }
-body.retro .static-overlay { display:block; }
-body.retro .tv-frame { display:flex; }
-body.retro .stream-frame { display:none; }
-body.retro .scan-overlay { display:block; }
-body.retro .info-panel { background:#0d0c08; border-color:#2a2010; color:var(--crt-text); }
-
-/* STREAM MODE (default) */
-body.stream .tv-frame { display:none; }
-body.stream .stream-frame { display:block; }
-body.stream .static-overlay { display:none; }
-body.stream .scan-overlay { display:none; }
-
-/* ── NAV ─────────────────────────────────────── */
-.top-nav{position:fixed;top:0;left:0;right:0;z-index:600;display:flex;align-items:center;justify-content:space-between;padding:9px 14px;padding-top:max(9px,env(safe-area-inset-top));background:rgba(10,10,10,0.97);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);gap:8px;flex-wrap:wrap;}
-.nav-brand{font-family:var(--display);font-size:.9rem;color:var(--pink);letter-spacing:1px;text-decoration:none;white-space:nowrap;}
-.nav-brand span{color:var(--cyan);}
-.nav-center{display:flex;gap:5px;align-items:center;}
-.view-toggle{display:flex;background:var(--bg3);border-radius:20px;overflow:hidden;border:1px solid var(--border2);}
-.vt-btn{font-family:var(--mono);font-size:7px;letter-spacing:.08em;padding:4px 9px;cursor:pointer;border:none;background:transparent;color:var(--muted);transition:.2s;}
-.vt-btn.active{background:var(--pink);color:#fff;}
-.nav-right{display:flex;gap:6px;align-items:center;}
-.nav-link{color:var(--muted);text-decoration:none;font-weight:700;font-size:.6rem;border:1px solid var(--border2);padding:3px 9px;border-radius:20px;font-family:var(--mono);transition:.2s;white-space:nowrap;}
-.nav-link:hover{border-color:var(--cyan);color:var(--cyan);}
-.live-dot{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:7px;letter-spacing:.1em;color:var(--pink);}
-.live-dot::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--pink);animation:livePulse 1.2s ease-in-out infinite;}
-@keyframes livePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
-
-/* ── CHANNEL BAR ─────────────────────────────── */
-.channel-bar{position:fixed;top:var(--nav-h,52px);left:0;right:0;z-index:500;display:flex;overflow-x:auto;background:rgba(10,10,10,0.95);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);scrollbar-width:none;padding:0 4px;}
-.channel-bar::-webkit-scrollbar{display:none;}
-.channel-btn{flex-shrink:0;display:flex;align-items:center;gap:7px;padding:.5rem .9rem;cursor:pointer;border:none;background:transparent;color:var(--muted);border-bottom:2px solid transparent;transition:.15s;font-family:var(--mono);font-size:.65rem;letter-spacing:.06em;white-space:nowrap;}
-.channel-btn:hover{color:var(--text);}
-.channel-btn.active{color:var(--text);border-bottom-color:var(--pink);}
-.ch-num{font-family:var(--display);font-size:10px;color:var(--pink);}
-.ch-icon{font-size:14px;}
-
-/* ── MAIN LAYOUT ─────────────────────────────── */
-.main{padding-top:calc(52px + 44px);min-height:100vh;}
-
-/* ── STREAM FRAME (modern view) ─────────────── */
-.stream-frame{width:100%;background:#000;aspect-ratio:16/9;max-height:calc(100vh - 200px);}
-.stream-frame iframe{width:100%;height:100%;border:none;display:block;}
-
-/* ── TV FRAME (retro view) ──────────────────── */
-.tv-frame{display:none;justify-content:center;align-items:flex-start;padding:1.5rem;position:relative;}
-.tv-cabinet{background:linear-gradient(145deg,#2a2010,#1a1508,#2a2010);border-radius:24px 24px 40px 40px;padding:20px 20px 40px;box-shadow:0 20px 60px rgba(0,0,0,0.8),0 0 30px rgba(212,168,67,0.05),inset 0 1px 0 rgba(255,255,255,0.05);max-width:820px;width:100%;margin:0 auto;}
-.tv-bezel{background:#0a0905;border-radius:12px;padding:14px;box-shadow:inset 0 0 20px rgba(0,0,0,0.8),0 0 15px rgba(212,168,67,0.08);position:relative;overflow:hidden;}
-.tv-screen{position:relative;aspect-ratio:16/9;overflow:hidden;border-radius:6px;}
-.tv-screen iframe{width:100%;height:100%;border:none;display:block;position:relative;z-index:1;}
-.scan-overlay{display:none;position:absolute;inset:0;z-index:2;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.18) 2px,rgba(0,0,0,0.18) 4px);border-radius:6px;}
-.static-overlay{display:none;position:absolute;inset:0;z-index:3;pointer-events:none;border-radius:6px;opacity:0;}
-.tv-controls{display:flex;justify-content:space-between;align-items:center;padding:.6rem 0 0;margin-top:.5rem;}
-.tv-brand{font-family:var(--display);font-size:13px;color:var(--crt-amber);letter-spacing:3px;text-shadow:0 0 8px rgba(212,168,67,0.4);}
-.tv-led{width:8px;height:8px;border-radius:50%;background:var(--crt-amber);box-shadow:0 0 6px var(--crt-amber);animation:livePulse 1.2s infinite;}
-.tv-knobs{display:flex;gap:10px;}
-.tv-knob{width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#3a3020,#1a1508);border:1px solid #2a2010;box-shadow:0 2px 4px rgba(0,0,0,0.5);}
-.tv-stand{width:60px;height:16px;background:linear-gradient(145deg,#2a2010,#1a1508);border-radius:0 0 8px 8px;margin:0 auto;}
-
-/* ── INFO PANEL ──────────────────────────────── */
-.info-panel{background:var(--bg2);border-top:1px solid var(--border);padding:.75rem 1rem;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;}
-.np-left{flex:1;min-width:0;}
-.np-channel{font-family:var(--mono);font-size:7px;letter-spacing:.15em;text-transform:uppercase;color:var(--pink);margin-bottom:.2rem;}
-.np-title{font-family:var(--display);font-size:14px;color:var(--text);letter-spacing:.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:.2rem;}
-.np-time{font-family:var(--mono);font-size:9px;color:var(--muted);}
-.np-right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;}
-.progress-bar{width:160px;height:3px;background:var(--dim);border-radius:2px;overflow:hidden;}
-.progress-fill{height:100%;background:linear-gradient(to right,var(--pink),var(--cyan));border-radius:2px;transition:width .5s linear;}
-.np-next{font-family:var(--mono);font-size:8px;color:var(--muted);text-align:right;}
-
-/* ── EPG — PROGRAM GUIDE ─────────────────────── */
-.epg-wrap{padding:.75rem 1rem;background:var(--bg);border-top:1px solid var(--border);max-width:100%;overflow-x:auto;}
-.epg-label{font-family:var(--mono);font-size:7px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:.6rem;}
-.epg-row{display:flex;gap:8px;padding-bottom:.5rem;}
-.epg-card{flex-shrink:0;width:160px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:.55rem .65rem;cursor:pointer;transition:.15s;}
-.epg-card:hover{border-color:var(--cyan);}
-.epg-card.now{border-color:var(--pink);}
-.epg-ch{font-family:var(--mono);font-size:7px;color:var(--muted);margin-bottom:.2rem;}
-.epg-title{font-size:11px;font-weight:700;color:var(--text);margin-bottom:.2rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.epg-time{font-family:var(--mono);font-size:8px;color:var(--muted);}
-.epg-now-badge{font-family:var(--mono);font-size:6px;letter-spacing:.08em;padding:1px 5px;border-radius:20px;background:rgba(255,0,128,0.15);border:1px solid rgba(255,0,128,0.3);color:var(--pink);margin-left:4px;}
-
-/* ── STATIC SWITCHING ANIMATION ─────────────── */
-@keyframes staticFlash{
-  0%{opacity:0} 10%{opacity:.7} 20%{opacity:.3} 30%{opacity:.8} 50%{opacity:.5} 70%{opacity:.9} 85%{opacity:.4} 100%{opacity:0}
-}
-.switching .static-overlay{animation:staticFlash .4s ease forwards;}
-.switching iframe{opacity:0;transition:opacity .1s;}
-
-/* ── MUTE BTN ────────────────────────────────── */
-.mute-btn{font-family:var(--mono);font-size:8px;letter-spacing:.08em;padding:4px 10px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;transition:.15s;}
-.mute-btn:hover{border-color:var(--pink);color:var(--pink);}
-  </style>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/retro.css">
+  <link rel="stylesheet" href="css/stream.css">
 </head>
-<body class="stream">
+<body class="retro">
 
-<!-- NAV -->
+<!-- ── TOP NAV ── -->
 <nav class="top-nav">
   <a href="https://radiopumpo.github.io" class="nav-brand">PUMPO<span>TV</span></a>
   <div class="nav-center">
     <div class="view-toggle">
-      <button class="vt-btn" data-v="retro" onclick="setView(this,'retro')">📺 Retro</button>
-      <button class="vt-btn active" data-v="stream" onclick="setView(this,'stream')">🖥 Stream</button>
+      <button class="vt-btn active" data-v="retro"   onclick="App.setView('retro')">📺 Retro</button>
+      <button class="vt-btn"        data-v="stream"  onclick="App.setView('stream')">🖥 Stream</button>
     </div>
-    <div class="live-dot">LIVE</div>
+    <div class="live-badge">LIVE</div>
   </div>
   <div class="nav-right">
-    <button class="mute-btn" id="muteBtn" onclick="toggleMute()">🔊 Unmute</button>
-    <a href="https://radiopumpo.github.io" class="nav-link">📻 Radio</a>
+    <button class="mute-btn" id="muteBtn" onclick="App.toggleMute()">🔇 Muted</button>
+    <a href="https://radiopumpo.github.io"            class="nav-link">📻 Radio</a>
     <a href="https://radiopumpo.github.io/pumpo-tools" class="nav-link">🛠 Tools</a>
   </div>
 </nav>
 
-<!-- CHANNEL BAR -->
+<!-- ── CHANNEL BAR ── -->
 <div class="channel-bar" id="channelBar"></div>
 
-<!-- MAIN -->
-<div class="main" id="main">
+<!-- ── MAIN ── -->
+<div class="main">
 
-  <!-- STREAM VIEW -->
-  <div class="stream-frame" id="streamFrame">
-    <iframe id="ytPlayer" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-  </div>
+  <!-- RETRO LAYOUT: TV + Remote side by side -->
+  <div class="tv-layout">
 
-  <!-- RETRO VIEW -->
-  <div class="tv-frame" id="tvFrame">
+    <!-- TV CABINET -->
     <div class="tv-cabinet">
       <div class="tv-bezel">
         <div class="tv-screen" id="tvScreen">
-          <iframe id="ytPlayerRetro" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-          <div class="scan-overlay"></div>
-          <div class="static-overlay" id="staticOverlay"
-            style="background:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2264%22 height=%2264%22><filter id=%22n%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%224%22/><feColorMatrix type=%22saturate%22 values=%220%22/></filter><rect width=%2264%22 height=%2264%22 filter=%22url(%23n)%22 opacity=%22.4%22/></svg>');background-size:64px 64px;"></div>
+          <iframe id="ytRetro" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+          <div class="scan-lines"></div>
+          <div class="static-layer"></div>
         </div>
-        <div class="tv-controls">
-          <div class="tv-brand">PUMPO</div>
-          <div class="tv-led"></div>
-          <div class="tv-knobs"><div class="tv-knob"></div><div class="tv-knob"></div></div>
+        <div class="tv-bottom">
+          <div class="tv-brand-text">PUMPO</div>
+          <div class="tv-indicators">
+            <div class="tv-led"></div>
+            <div class="tv-knobs">
+              <div class="tv-knob"></div>
+              <div class="tv-knob"></div>
+            </div>
+          </div>
         </div>
       </div>
       <div class="tv-stand"></div>
     </div>
+
+    <!-- VIRTUAL REMOTE -->
+    <div class="remote" id="remoteEl"></div>
+
   </div>
 
-  <!-- INFO BAR -->
-  <div class="info-panel" id="infoPanel">
-    <div class="np-left">
-      <div class="np-channel" id="npChannel">PumpoTV</div>
-      <div class="np-title" id="npTitle">Loading...</div>
-      <div class="np-time" id="npTime">—</div>
+  <!-- STREAM LAYOUT: full-width player -->
+  <div class="stream-layout">
+    <iframe id="ytStream" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+  </div>
+
+  <!-- ── INFO BAR ── -->
+  <div class="info-bar">
+    <div class="info-left">
+      <div class="info-ch" id="infoCh">PumpoTV</div>
+      <div class="info-title" id="infoTitle">Loading...</div>
+      <div class="info-time" id="infoTime">—</div>
     </div>
-    <div class="np-right">
+    <div class="info-right">
       <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
-      <div class="np-next" id="npNext">Up next: —</div>
+      <div class="info-next" id="infoNext">Up next: —</div>
     </div>
   </div>
 
-  <!-- EPG -->
-  <div class="epg-wrap">
-    <div class="epg-label">Now on PumpoTV</div>
-    <div class="epg-row" id="epgRow"></div>
+  <!-- ── EPG ── -->
+  <div class="epg-section">
+    <div class="epg-toggle" id="epgToggle">
+      <span class="epg-toggle-label">▼ Programme Guide</span>
+      <span class="epg-chevron" id="epgChevron">▼</span>
+    </div>
+    <div class="epg-body" id="epgBody">
+      <div class="epg-tabs">
+        <button class="epg-tab active" data-tab="now"      onclick="EPG.setTab('now')">Now playing</button>
+        <button class="epg-tab"        data-tab="next"     onclick="EPG.setTab('next')">Up next</button>
+        <button class="epg-tab"        data-tab="schedule" onclick="EPG.setTab('schedule')">Schedule</button>
+      </div>
+      <div class="epg-cards" id="epgCards"></div>
+    </div>
   </div>
 
-</div>
+  <!-- ── PUMPO PICKS (AI CHANNEL) ── -->
+  <div class="foryou-panel" id="forYouPanel" style="display:none;">
+    <div class="fy-title">✨ Pumpo Picks — Tell me what you want to watch</div>
 
-<script>
-// ════════════════════════════════════════════════
-// PLAYLISTS
-// ════════════════════════════════════════════════
-// Edit here to add/remove videos.
-// duration: seconds. All videos must have embedding enabled.
-// To test: open https://www.youtube.com/embed/VIDEO_ID in a browser.
+    <!-- Model toggle -->
+    <div class="fy-model-toggle">
+      <button class="fy-model-btn active" data-m="gemini" onclick="AIChannel.setModel('gemini')">Gemini</button>
+      <button class="fy-model-btn"        data-m="claude" onclick="AIChannel.setModel('claude')">Claude</button>
+    </div>
 
-const CHANNELS = [
-  {
-    id: 'main', num: 1, name: 'PumpoTV 24/7', icon: '📺', color: '#ff0080',
-    playlist: [
-      { id: 'dQw4w9WgXcQ', title: 'Rick Astley — Never Gonna Give You Up', duration: 212 },
-      { id: '9bZkp7q19f0', title: 'PSY — Gangnam Style', duration: 253 },
-      { id: 'hT_nvWreIhg', title: 'OneRepublic — Counting Stars', duration: 257 },
-      { id: 'OPf0YbXqDm0', title: 'Mark Ronson ft. Bruno Mars — Uptown Funk', duration: 270 },
-      { id: 'RgKAFK5djSk', title: 'Wiz Khalifa — See You Again ft. Charlie Puth', duration: 229 },
-      { id: 'JGwWNGJdvx8', title: 'Ed Sheeran — Shape of You', duration: 234 },
-      { id: 'ktvTqknDobU', title: 'Pharrell Williams — Happy', duration: 233 },
-      { id: 'PT2_F-1esPk', title: 'Luis Fonsi — Despacito', duration: 229 },
-      { id: 'fRh_vgS2dFE', title: 'Justin Bieber — Sorry', duration: 200 },
-      { id: 'nfWlot6h_JM', title: 'Taylor Swift — Shake It Off', duration: 219 },
-    ]
-  },
-  {
-    id: 'sports', num: 2, name: "Pumpo's Sports", icon: '⚽', color: '#40e0d0',
-    playlist: [
-      { id: 'X8XQlELqF6A', title: 'Greatest Football Goals Ever', duration: 780 },
-      { id: 'u3RUMKNTIck', title: 'NBA Greatest Dunks Compilation', duration: 620 },
-      { id: 'bWA1hjhPFjI', title: 'Top 50 Sports Moments of the Decade', duration: 900 },
-      { id: 'F-vPLAr7cpg', title: 'F1 Greatest Overtakes', duration: 540 },
-      { id: 'pN-GqeR-S1E', title: 'Tennis Best Points Ever', duration: 480 },
-      { id: 'ZhH6MBFqBl0', title: 'Boxing Greatest Knockouts', duration: 660 },
-      { id: 'VHlm_MBXk6U', title: 'Swimming World Records Broken', duration: 420 },
-      { id: 'qGPBFvDz_HM', title: 'Rugby Best Tries Compilation', duration: 720 },
-    ]
-  },
-  {
-    id: 'docs', num: 3, name: "Pumpo's Docs", icon: '🎓', color: '#9b59ff',
-    playlist: [
-      { id: 'Uti2niW2BRA', title: 'The Wonders of the Solar System', duration: 2700 },
-      { id: 'IFe9wiDfb0E', title: 'The History of Human Language', duration: 1800 },
-      { id: 'nUEBAS5r4Og', title: 'Ocean Deep: Unknown Creatures', duration: 3600 },
-      { id: 'MKlG4yh9FGw', title: 'How Cities Are Built', duration: 2400 },
-      { id: 'oSqg2OhPVGM', title: 'The Science of Sleep', duration: 1500 },
-      { id: 'I4g9r7bPFqg', title: 'Ancient Rome: Rise and Fall', duration: 3200 },
-      { id: '1Jix8XhOCOY', title: 'The Future of Artificial Intelligence', duration: 2800 },
-      { id: 'GNhlNSLQAFE', title: 'Climate: Earth\'s History', duration: 2200 },
-    ]
-  },
-  {
-    id: 'kitchen', num: 4, name: "Pumpo's Kitchen", icon: '🍳', color: '#ffaa00',
-    playlist: [
-      { id: 'bqPARIKHbI8', title: 'The Perfect Burger — Joshua Weissman', duration: 960 },
-      { id: 'VVnZd8A84z4', title: 'Pasta Carbonara the Right Way', duration: 780 },
-      { id: 'PKxCgJnIhpA', title: 'Gordon Ramsay\'s Perfect Scrambled Eggs', duration: 180 },
-      { id: 'HE_JrBnIFjM', title: 'The Art of Sushi Making', duration: 1800 },
-      { id: 'SUn0CtgFCzc', title: 'Authentic Neapolitan Pizza', duration: 1200 },
-      { id: 'v6fHtKH9kug', title: 'French Croissants from Scratch', duration: 2100 },
-      { id: 'nMyBC9staMU', title: 'Ramen at Home — Full Recipe', duration: 1500 },
-      { id: 'mmhGYDuMUPc', title: 'The World\'s Best Street Food', duration: 2400 },
-      { id: 'hgOLvRT6QIg', title: 'Indian Curry Masterclass', duration: 1800 },
-    ]
-  },
-  {
-    id: 'ads', num: 5, name: "Pumpo's Ads", icon: '📣', color: '#e05050',
-    playlist: [
-      { id: 'Vez5N3xGBNk', title: 'Apple — Think Different (1997)', duration: 59 },
-      { id: 'KmkVWuP_sO0', title: 'Nike — Find Your Greatness', duration: 91 },
-      { id: 'v76f6KPSJ2w', title: 'Old Spice — The Man Your Man Could Smell Like', duration: 32 },
-      { id: 'Fo_vF9g8tNY', title: 'Budweiser — Whassup (Original)', duration: 60 },
-      { id: 'XQcVllWpwGs', title: 'Volvo — Epic Split ft. Van Damme', duration: 75 },
-      { id: 'zIEIvi2MuEk', title: 'Dollar Shave Club Launch Ad', duration: 93 },
-      { id: 'VmHKONEVpAk', title: 'Dove — Real Beauty Sketches', duration: 184 },
-      { id: 'HkAK9QRe4ds', title: 'John Lewis — The Bear and the Hare', duration: 120 },
-      { id: 'GnDp9E1QKMU', title: 'Always — Like a Girl', duration: 180 },
-      { id: 'uNRWMR7vRmA', title: 'Apple — 1984 (Original Super Bowl Ad)', duration: 60 },
-    ]
-  },
-];
+    <!-- API key -->
+    <div class="fy-key-row">
+      <input type="password" class="fy-key-input" id="fyKeyInput" placeholder="Paste your Gemini or Anthropic API key...">
+      <button class="fy-key-save" onclick="AIChannel.saveKey(AIChannel.model)">Save</button>
+    </div>
 
-// ════════════════════════════════════════════════
-// TIME-SYNC ENGINE
-// Epoch: 2025-01-06 00:00:00 UTC (Monday)
-// ════════════════════════════════════════════════
-const EPOCH_MS = new Date('2025-01-06T00:00:00Z').getTime();
+    <!-- Prompt -->
+    <div class="fy-row">
+      <input class="fy-input" id="fyPrompt"
+        placeholder="e.g. calm cooking videos, TED talks about psychology, lo-fi music mixes..."
+        onkeydown="if(event.key==='Enter') App.generateForYou()">
+      <button class="fy-btn" id="fyBtn" onclick="App.generateForYou()">Generate ✦</button>
+    </div>
 
-function getChannelPosition(channel) {
-  const totalDuration = channel.playlist.reduce((s, v) => s + v.duration, 0);
-  if (totalDuration === 0) return { videoIndex: 0, seekTo: 0 };
-  const elapsedSeconds = (Date.now() - EPOCH_MS) / 1000;
-  const posInCycle = elapsedSeconds % totalDuration;
-  let acc = 0;
-  for (let i = 0; i < channel.playlist.length; i++) {
-    if (posInCycle < acc + channel.playlist[i].duration) {
-      return { videoIndex: i, seekTo: Math.floor(posInCycle - acc) };
-    }
-    acc += channel.playlist[i].duration;
-  }
-  return { videoIndex: 0, seekTo: 0 };
-}
+    <div class="fy-status" id="fyStatus">
+      The AI will curate a personal playlist from embeddable YouTube content based on your prompt.
+      Requires a Gemini or Claude API key.
+    </div>
+  </div>
 
-function getNextVideo(channel, currentIndex) {
-  return channel.playlist[(currentIndex + 1) % channel.playlist.length];
-}
+</div><!-- /main -->
 
-function formatTime(seconds) {
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60);
-  return `${m}:${s.toString().padStart(2,'0')}`;
-}
+<div class="toast" id="toastEl"></div>
 
-// ════════════════════════════════════════════════
-// STATE
-// ════════════════════════════════════════════════
-let currentChannelId = 'main';
-let currentView = 'stream';
-let muted = true;
-let playerReady = false;
-let updateInterval = null;
-let positionState = null;
+<!-- ── SCRIPTS ── -->
+<script src="js/player.js"></script>
+<script src="js/epg.js"></script>
+<script src="js/remote.js"></script>
+<script src="js/ai-channel.js"></script>
+<script src="js/app.js"></script>
 
-// ════════════════════════════════════════════════
-// INIT
-// ════════════════════════════════════════════════
-window.onload = function() {
-  buildChannelBar();
-  buildEPG();
-  loadChannel('main', false);
-  setInterval(buildEPG, 30000);
-  setInterval(updateProgress, 1000);
-};
-
-// ════════════════════════════════════════════════
-// CHANNEL SWITCHING
-// ════════════════════════════════════════════════
-function loadChannel(channelId, animate = true) {
-  const ch = CHANNELS.find(c => c.id === channelId);
-  if (!ch) return;
-
-  if (animate) triggerStatic();
-
-  currentChannelId = channelId;
-  positionState = getChannelPosition(ch);
-  positionState.channel = ch;
-  positionState.startedAt = Date.now();
-  positionState.initialSeek = positionState.seekTo;
-
-  // Active channel button
-  document.querySelectorAll('.channel-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('chbtn-'+channelId)?.classList.add('active');
-
-  // Build YouTube embed URL with all parameters
-  const videoId = ch.playlist[positionState.videoIndex].id;
-  const src = buildYTUrl(videoId, positionState.seekTo);
-
-  // Update both iframes
-  document.getElementById('ytPlayer').src = src;
-  document.getElementById('ytPlayerRetro').src = src;
-
-  // Update info panel
-  updateInfoPanel(ch, positionState);
-}
-
-function buildYTUrl(videoId, startSeconds) {
-  const params = new URLSearchParams({
-    autoplay: '1',
-    mute: muted ? '1' : '0',
-    start: Math.max(0, Math.floor(startSeconds)),
-    controls: '1',
-    rel: '0',
-    modestbranding: '1',
-    iv_load_policy: '3',
-    enablejsapi: '0',
-  });
-  return `https://www.youtube.com/embed/${videoId}?${params}`;
-}
-
-function triggerStatic() {
-  const screen = document.getElementById('tvScreen');
-  screen?.classList.add('switching');
-  setTimeout(() => screen?.classList.remove('switching'), 500);
-}
-
-// ════════════════════════════════════════════════
-// INFO PANEL + PROGRESS
-// ════════════════════════════════════════════════
-function updateInfoPanel(ch, pos) {
-  const video = ch.playlist[pos.videoIndex];
-  const next = getNextVideo(ch, pos.videoIndex);
-  document.getElementById('npChannel').textContent = ch.num + ' · ' + ch.name;
-  document.getElementById('npTitle').textContent = video.title;
-  document.getElementById('npNext').textContent = 'Up next: ' + next.title;
-}
-
-function updateProgress() {
-  if (!positionState) return;
-  const ch = positionState.channel;
-  if (!ch) return;
-  const video = ch.playlist[positionState.videoIndex];
-  const elapsed = positionState.initialSeek + (Date.now() - positionState.startedAt) / 1000;
-  const remaining = video.duration - elapsed;
-
-  if (remaining <= 0) {
-    // Advance to next video
-    const nextIndex = (positionState.videoIndex + 1) % ch.playlist.length;
-    positionState.videoIndex = nextIndex;
-    positionState.seekTo = 0;
-    positionState.startedAt = Date.now();
-    positionState.initialSeek = 0;
-    const nextVideo = ch.playlist[nextIndex];
-    const src = buildYTUrl(nextVideo.id, 0);
-    document.getElementById('ytPlayer').src = src;
-    document.getElementById('ytPlayerRetro').src = src;
-    updateInfoPanel(ch, positionState);
-    return;
-  }
-
-  const progress = (elapsed / video.duration) * 100;
-  document.getElementById('progressFill').style.width = Math.min(100, progress) + '%';
-  document.getElementById('npTime').textContent =
-    formatTime(Math.floor(elapsed)) + ' / ' + formatTime(video.duration) + ' · ' + formatTime(Math.floor(remaining)) + ' remaining';
-}
-
-// ════════════════════════════════════════════════
-// CHANNEL BAR
-// ════════════════════════════════════════════════
-function buildChannelBar() {
-  const bar = document.getElementById('channelBar');
-  bar.innerHTML = CHANNELS.map(ch =>
-    `<button class="channel-btn ${ch.id === currentChannelId ? 'active' : ''}"
-       id="chbtn-${ch.id}"
-       onclick="loadChannel('${ch.id}')"
-       style="--ch-color:${ch.color}">
-      <span class="ch-num" style="color:${ch.color}">${ch.num}</span>
-      <span class="ch-icon">${ch.icon}</span>
-      <span>${ch.name}</span>
-    </button>`
-  ).join('');
-}
-
-// ════════════════════════════════════════════════
-// EPG — PROGRAM GUIDE
-// ════════════════════════════════════════════════
-function buildEPG() {
-  const row = document.getElementById('epgRow');
-  row.innerHTML = CHANNELS.map(ch => {
-    const pos = getChannelPosition(ch);
-    const video = ch.playlist[pos.videoIndex];
-    const next = getNextVideo(ch, pos.videoIndex);
-    const remaining = video.duration - pos.seekTo;
-    const isActive = ch.id === currentChannelId;
-    return `<div class="epg-card ${isActive ? 'now' : ''}" onclick="loadChannel('${ch.id}')">
-      <div class="epg-ch">${ch.num} · ${ch.icon} ${ch.name}</div>
-      <div class="epg-title">${escH(video.title)} ${isActive ? '<span class="epg-now-badge">NOW</span>' : ''}</div>
-      <div class="epg-time">ends in ${formatTime(Math.floor(remaining))} · next: ${escH(next.title.slice(0,22)+(next.title.length>22?'…':''))}</div>
-    </div>`;
-  }).join('');
-}
-
-// ════════════════════════════════════════════════
-// VIEW TOGGLE
-// ════════════════════════════════════════════════
-function setView(btn, view) {
-  currentView = view;
-  document.body.classList.remove('retro','stream');
-  document.body.classList.add(view);
-  document.querySelectorAll('.vt-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  // Sync active player
-  const activeSrc = view === 'stream'
-    ? document.getElementById('ytPlayerRetro').src
-    : document.getElementById('ytPlayer').src;
-  if (view === 'stream') document.getElementById('ytPlayer').src = activeSrc;
-  else document.getElementById('ytPlayerRetro').src = activeSrc;
-}
-
-// ════════════════════════════════════════════════
-// MUTE (YouTube iframes start muted by default due to autoplay policy)
-// ════════════════════════════════════════════════
-function toggleMute() {
-  muted = !muted;
-  document.getElementById('muteBtn').textContent = muted ? '🔊 Unmute' : '🔇 Mute';
-  // Reload current channel with new mute state
-  loadChannel(currentChannelId, false);
-}
-
-// ════════════════════════════════════════════════
-// AD BREAK UTILITY (for future use between channels)
-// ════════════════════════════════════════════════
-function getCurrentAd() {
-  const adChannel = CHANNELS.find(c => c.id === 'ads');
-  if (!adChannel) return null;
-  const pos = getChannelPosition(adChannel);
-  return { ...adChannel.playlist[pos.videoIndex], seekTo: pos.seekTo };
-}
-
-// Inject ad break into current channel (v1 future feature)
-function injectAdBreak(durationSeconds) {
-  const ad = getCurrentAd();
-  if (!ad) return;
-  const savedChannel = currentChannelId;
-  const src = buildYTUrl(ad.id, ad.seekTo);
-  document.getElementById('ytPlayer').src = src;
-  document.getElementById('ytPlayerRetro').src = src;
-  document.getElementById('npChannel').textContent = '📣 Ad Break';
-  document.getElementById('npTitle').textContent = ad.title;
-  setTimeout(() => loadChannel(savedChannel, false), durationSeconds * 1000);
-}
-
-// ════════════════════════════════════════════════
-// UTILS
-// ════════════════════════════════════════════════
-function escH(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-</script>
 </body>
 </html>
