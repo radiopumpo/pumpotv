@@ -29,15 +29,18 @@ const Player = {
 
   buildSrc(videoId, seekTo) {
     const p = new URLSearchParams({
-      autoplay: '1',
-      mute: this.muted ? '1' : '0',
-      start: Math.max(0, Math.floor(seekTo)),
-      controls: '1',
-      rel: '0',
-      modestbranding: '1',
-      iv_load_policy: '3',
-      enablejsapi: '1',       // required for postMessage mute
-      origin: location.origin || 'https://radiopumpo.github.io',
+      autoplay:        '1',
+      mute:            '1',      // always start muted — mobile autoplay requires it
+      start:           Math.max(0, Math.floor(seekTo)),
+      controls:        '0',      // we own the controls
+      rel:             '0',
+      modestbranding:  '1',
+      iv_load_policy:  '3',
+      playsinline:     '1',      // critical for iOS inline playback (no fullscreen hijack)
+      enablejsapi:     '1',
+      fs:              '0',      // disable YouTube's own fullscreen button
+      disablekb:       '1',      // disable keyboard shortcuts inside iframe
+      origin:          (typeof location !== 'undefined' ? location.origin : 'https://radiopumpo.github.io'),
     });
     return `https://www.youtube.com/embed/${videoId}?${p}`;
   },
@@ -74,15 +77,38 @@ const Player = {
   },
 
   // ── MUTE via postMessage (no iframe reload) ─────────────
-  setMute(muted) {
-    this.muted = muted;
-    const func = muted ? 'mute' : 'unMute';
-    const msg = JSON.stringify({ event: 'command', func, args: '' });
-    // Only send to the active iframe to prevent double audio
+  volume: 0,  // 0 = muted (autoplay requirement), range 0-100
+
+  _postToActive(msg) {
     const activeId = document.body.classList.contains('retro') ? 'ytRetro' : 'ytStream';
     const iframe = document.getElementById(activeId);
-    if (iframe) iframe.contentWindow?.postMessage(msg, '*');
+    if (iframe) iframe.contentWindow?.postMessage(JSON.stringify(msg), '*');
   },
+
+  setVolume(vol) {
+    this.volume = Math.max(0, Math.min(100, vol));
+    this.muted = this.volume === 0;
+    if (this.muted) {
+      this._postToActive({ event: 'command', func: 'mute', args: '' });
+    } else {
+      this._postToActive({ event: 'command', func: 'unMute', args: '' });
+      this._postToActive({ event: 'command', func: 'setVolume', args: [this.volume] });
+    }
+    VolumeDisplay.show(this.volume);
+    // Sync mute button label
+    const btn = document.getElementById('muteBtn');
+    if (btn) {
+      btn.textContent = this.muted ? '🔇 Muted' : '🔊 Live';
+      btn.classList.toggle('unmuted', !this.muted);
+    }
+  },
+
+  setMute(muted) {
+    this.setVolume(muted ? 0 : 75);
+  },
+
+  volUp()   { this.setVolume(this.volume === 0 ? 50 : Math.min(100, this.volume + 25)); },
+  volDown() { this.setVolume(Math.max(0,  this.volume - 25)); },
 
   // ── PROGRESS ────────────────────────────────────────────
   getProgress() {
@@ -115,6 +141,14 @@ const Player = {
       const el = document.getElementById(id);
       if (el) el.src = src;
     });
+    // Re-apply volume state after iframe loads (~1.5s grace for mobile buffering)
+    clearTimeout(this._volTimer);
+    this._volTimer = setTimeout(() => {
+      if (this.volume > 0) {
+        this._postToActive({ event: 'command', func: 'unMute', args: '' });
+        this._postToActive({ event: 'command', func: 'setVolume', args: [this.volume] });
+      }
+    }, 1500);
   },
 
   _triggerStatic() {
@@ -139,3 +173,71 @@ const Player = {
     return { ...adCh.playlist[pos.videoIndex], seekTo: pos.seekTo };
   },
 };
+
+/* ── VOLUME DISPLAY ── */
+const VolumeDisplay = {
+  timer: null,
+  show(vol) {
+    let el = document.getElementById('volMeter');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'volMeter';
+      el.style.cssText = `
+        position:absolute;bottom:12px;left:50%;transform:translateX(-50%);
+        z-index:20;background:rgba(0,0,0,0.75);border:1px solid rgba(212,168,67,0.4);
+        border-radius:6px;padding:6px 10px;display:flex;flex-direction:column;
+        align-items:center;gap:4px;pointer-events:none;transition:opacity .4s;`;
+      const label = document.createElement('div');
+      label.id = 'volLabel';
+      label.style.cssText = 'font-family:"Space Mono",monospace;font-size:8px;color:#d4a843;letter-spacing:.1em;';
+      const bars = document.createElement('div');
+      bars.id = 'volBars';
+      bars.style.cssText = 'display:flex;gap:2px;align-items:flex-end;height:20px;';
+      el.appendChild(label);
+      el.appendChild(bars);
+      const screen = document.getElementById('tvScreen') || document.querySelector('.stream-layout');
+      screen?.appendChild(el);
+    }
+    // Draw bars
+    const steps = 8;
+    const filled = Math.round((vol / 100) * steps);
+    const bars = document.getElementById('volBars');
+    const label = document.getElementById('volLabel');
+    if (bars) {
+      bars.innerHTML = Array.from({length: steps}, (_, i) => {
+        const h = 6 + i * 2;
+        const active = i < filled;
+        const col = active ? (i >= 6 ? '#e05050' : i >= 4 ? '#ffaa00' : '#40b870') : '#2a2010';
+        return `<div style="width:6px;height:${h}px;background:${col};border-radius:1px;"></div>`;
+      }).join('');
+    }
+    if (label) label.textContent = vol === 0 ? '🔇 MUTE' : `VOL ${vol}`;
+    el.style.opacity = '1';
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => { if (el) el.style.opacity = '0'; }, 1800);
+  },
+};
+
+/* ── FULLSCREEN ── */
+const FullScreen = {
+  toggle() {
+    const target = document.body.classList.contains('retro')
+      ? document.querySelector('.tv-cabinet')
+      : document.querySelector('.stream-layout');
+    if (!target) return;
+    if (!document.fullscreenElement) {
+      target.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen();
+    }
+  },
+};
+
+// Keyboard shortcut: F = fullscreen, M = mute toggle, up/down arrows = volume
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.key === 'f' || e.key === 'F') FullScreen.toggle();
+  if (e.key === 'm' || e.key === 'M') Player.setMute(!Player.muted);
+  if (e.key === 'ArrowUp')   { e.preventDefault(); Player.volUp(); }
+  if (e.key === 'ArrowDown') { e.preventDefault(); Player.volDown(); }
+});
