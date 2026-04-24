@@ -82,7 +82,7 @@ body.stream .stream-layout { display:block; }
 
 /* REMOTE CONTROL */
 .remote {
-  width:90px;flex-shrink:0;
+  width:100px;flex-shrink:0;
   background:linear-gradient(160deg,#1e1c14,#141208,#1e1c14);
   border-radius:12px 12px 20px 20px;
   padding:12px 10px 20px;
