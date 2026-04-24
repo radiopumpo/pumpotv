@@ -8,6 +8,8 @@ const AIChannel = {
   SYSTEM: `You are a video curator for PumpoTV, a web TV platform that embeds YouTube videos.
 Your job: given a user's request, return a JSON array of 15 YouTube videos that match it.
 
+You MUST return ONLY a raw JSON array — no explanation, no markdown, no code fences, no preamble, no text before or after the array. Start your response with [ and end with ].
+
 CRITICAL RULES:
 1. Only suggest videos from channels known to allow embedding: TED Talks, Vevo, official artist channels, cooking YouTubers (Joshua Weissman, Bon Appétit, Babish, Gordon Ramsay's official channel), documentary channels that own their content, lo-fi/ambient music streams, educational channels, comedy sketches from official channels.
 2. NEVER suggest: recent sports events, major label music videos from VEVO (they often block embed), news clips, movies, TV show episodes, or any content likely behind DRM.
@@ -50,6 +52,7 @@ Return format example:
       const reply = this.model === 'gemini'
         ? await this._callGemini(key, prompt)
         : await this._callClaude(key, prompt);
+      console.log('[PumpoPicksRAW]', reply.slice(0, 500));
 
       // Strip markdown fences
       let clean = reply.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
@@ -75,11 +78,24 @@ Return format example:
         playlist = objs;
       }
 
-      if (!Array.isArray(playlist) || !playlist.length) throw new Error('Invalid playlist format');
+      // Validate — filter to items that at minimum have an id
+      const valid = Array.isArray(playlist)
+        ? playlist.filter(v => v && typeof v.id === 'string' && v.id.length > 5)
+        : [];
+      if (!valid.length) {
+        console.error('[PumpoPicksParsed]', playlist);
+        throw new Error('AI returned no valid video IDs. Try a different prompt.');
+      }
+      // Fill missing fields with defaults
+      const finalPlaylist = valid.map(v => ({
+        id: v.id.trim(),
+        title: (v.title || v.name || 'Untitled').toString().trim(),
+        duration: parseInt(v.duration) || 300,
+      }));
 
       // Store and return
-      window.CHANNELS_DATA.find(c => c.id === 'foryou').playlist = playlist;
-      this._setStatus(`✓ ${playlist.length} videos curated for you`);
+      window.CHANNELS_DATA.find(c => c.id === 'foryou').playlist = finalPlaylist;
+      this._setStatus(`✓ ${finalPlaylist.length} videos curated for you`);
       App.toast('Pumpo Picks ready — switching to your channel');
       return playlist;
 
