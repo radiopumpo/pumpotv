@@ -12,6 +12,11 @@
   <link rel="stylesheet" href="css/stream.css">
 <style>
 .click-blocker{position:absolute;inset:0;z-index:10;cursor:default;background:transparent;}
+.tap-hint{position:absolute;bottom:40px;left:50%;transform:translateX(-50%);z-index:15;
+  background:rgba(0,0,0,0.7);border:1px solid rgba(212,168,67,0.4);border-radius:20px;
+  padding:5px 14px;font-family:"Space Mono",monospace;font-size:9px;color:#d4a843;
+  pointer-events:none;white-space:nowrap;opacity:0;transition:opacity .4s;}
+.tap-hint.show{opacity:1;}
 .tv-off #tvScreen iframe{visibility:hidden;}
 .tv-off #tvScreen::before{content:'';position:absolute;inset:0;z-index:5;background:#000;border-radius:6px;}
 .tv-off #tvScreen::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:4px;height:4px;background:#e8e0c0;border-radius:50%;box-shadow:0 0 20px 8px rgba(232,224,192,0.6);z-index:6;animation:crtOff .3s ease forwards;}
@@ -50,7 +55,7 @@
     <div class="tv-cabinet">
       <div class="tv-bezel">
         <div class="tv-screen" id="tvScreen">
-          <iframe id="ytRetro" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+          <iframe id="ytRetro" allow="autoplay; encrypted-media" allowfullscreen playsinline webkit-playsinline></iframe>
           <div class="scan-lines"></div>
           <div class="static-layer"></div>
           <div class="click-blocker"></div>
@@ -79,7 +84,7 @@
 
   <!-- STREAM LAYOUT: full-width player -->
   <div class="stream-layout" style="position:relative;">
-    <iframe id="ytStream" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+    <iframe id="ytStream" allow="autoplay; encrypted-media" allowfullscreen playsinline webkit-playsinline></iframe>
     <div class="click-blocker"></div>
   </div>
 
