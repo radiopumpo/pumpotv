@@ -29,7 +29,11 @@ const Remote = {
         <button class="rmt-vol-btn" onclick="Remote.volUp()" title="Vol +">+</button>
       </div>
       <div class="rmt-divider"></div>
-      <button class="rmt-power" onclick="Remote.power()" title="Power / Static">⏻</button>`;
+      <button class="rmt-power" onclick="Remote.power()" title="Power">⏻</button>
+      <div class="rmt-divider"></div>
+      <button class="rmt-btn" onclick="FullScreen.toggle()" style="justify-content:center;gap:5px;width:100%;">
+        <span style="font-size:11px;">⛶</span><span>Full</span>
+      </button>`;
   },
 
   updateActiveChannel(channelId) {
@@ -61,13 +65,6 @@ const Remote = {
     }
   },
 
-  volUp() {
-    // Always unmute — explicit, not toggle
-    if (Player.muted) App.toggleMute();
-  },
-
-  volDown() {
-    // Always mute — explicit, not toggle
-    if (!Player.muted) App.toggleMute();
-  },
+  volUp()   { Player.volUp(); },
+  volDown() { Player.volDown(); },
 };
