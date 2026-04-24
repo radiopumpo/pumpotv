@@ -1,0 +1,5 @@
+/* ============================================================
+   stream.css — PumpoTV Modern Stream View
+   ============================================================ */
+.stream-layout { width:100%; background:#000; }
+.stream-layout iframe { width:100%; aspect-ratio:16/9; max-height:calc(100vh - 200px); border:none; display:block; }
