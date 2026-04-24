@@ -78,10 +78,10 @@ const Player = {
     this.muted = muted;
     const func = muted ? 'mute' : 'unMute';
     const msg = JSON.stringify({ event: 'command', func, args: '' });
-    ['ytStream', 'ytRetro'].forEach(id => {
-      const iframe = document.getElementById(id);
-      if (iframe) iframe.contentWindow?.postMessage(msg, '*');
-    });
+    // Only send to the active iframe to prevent double audio
+    const activeId = document.body.classList.contains('retro') ? 'ytRetro' : 'ytStream';
+    const iframe = document.getElementById(activeId);
+    if (iframe) iframe.contentWindow?.postMessage(msg, '*');
   },
 
   // ── PROGRESS ────────────────────────────────────────────
