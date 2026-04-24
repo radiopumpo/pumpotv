@@ -51,8 +51,29 @@ Return format example:
         ? await this._callGemini(key, prompt)
         : await this._callClaude(key, prompt);
 
-      const clean = reply.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-      const playlist = JSON.parse(clean);
+      // Strip markdown fences
+      let clean = reply.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
+      // Extract first JSON array even if model added surrounding text
+      const arrStart = clean.indexOf('[');
+      const arrEnd = clean.lastIndexOf(']');
+      if (arrStart === -1 || arrEnd === -1) throw new Error('No JSON array found in response');
+      clean = clean.slice(arrStart, arrEnd + 1);
+      // Sanitise control characters that break JSON.parse
+      clean = clean.replace(/[\x00-\x1F\x7F]/g, ' ');
+      let playlist;
+      try {
+        playlist = JSON.parse(clean);
+      } catch(parseErr) {
+        // Last resort: extract individual objects with regex
+        const objs = [];
+        const rx = /\{[^{}]*"id"\s*:\s*"([^"]+)"[^{}]*"title"\s*:\s*"([^"]+)"[^{}]*"duration"\s*:\s*(\d+)[^{}]*\}/g;
+        let m;
+        while ((m = rx.exec(clean)) !== null) {
+          objs.push({ id: m[1], title: m[2], duration: parseInt(m[3]) });
+        }
+        if (!objs.length) throw new Error('Could not parse AI response: ' + parseErr.message);
+        playlist = objs;
+      }
 
       if (!Array.isArray(playlist) || !playlist.length) throw new Error('Invalid playlist format');
 
