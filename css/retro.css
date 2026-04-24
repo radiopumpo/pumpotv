@@ -1,0 +1,115 @@
+/* ============================================================
+   retro.css — PumpoTV CRT + Remote
+   ============================================================ */
+
+/* Body overrides */
+body.retro { background:#14100a; }
+body.retro .top-nav { background:rgba(12,10,5,0.97); border-bottom-color:#2a2010; }
+body.retro .nav-brand { color:#d4a843; text-shadow:0 0 10px rgba(212,168,67,0.4); }
+body.retro .nav-brand span { color:#c8803a; }
+body.retro .channel-bar { background:rgba(12,10,5,0.95); border-bottom-color:#2a2010; }
+body.retro .ch-btn { color:#5a4a2a; }
+body.retro .ch-btn:hover { color:#c8a060; }
+body.retro .ch-btn.active { color:#d4a843; border-bottom-color:#d4a843; }
+body.retro .ch-num { color:#d4a843; }
+body.retro .info-bar { background:#0d0c08; border-bottom-color:#2a2010; }
+body.retro .info-ch { color:#d4a843; }
+body.retro .info-title { color:#e8e0c0; }
+body.retro .progress-fill { background:linear-gradient(to right,#d4a843,#c8803a); }
+body.retro .epg-section { background:#0a0905; border-top-color:#2a2010; }
+body.retro .epg-card { background:#0d0c08; border-color:#2a2010; }
+body.retro .epg-card.now-card { border-color:#d4a843; }
+body.retro .foryou-panel { background:#0d0c08; border-top-color:#2a2010; }
+
+/* TV LAYOUT */
+body.retro .tv-layout { display:flex; gap:1.5rem; align-items:flex-start; padding:1rem; justify-content:center; flex-wrap:wrap; }
+body.retro .stream-layout { display:none; }
+body.stream .tv-layout { display:none; }
+body.stream .stream-layout { display:block; }
+
+/* TV CABINET */
+.tv-cabinet {
+  background:linear-gradient(145deg,#2e2518,#1a1508,#2e2518);
+  border-radius:22px 22px 36px 36px;
+  padding:18px 18px 36px;
+  box-shadow:0 20px 60px rgba(0,0,0,0.85),0 0 40px rgba(212,168,67,0.04),inset 0 1px 0 rgba(255,255,255,0.04);
+  max-width:680px; width:100%; flex-shrink:1;
+}
+.tv-bezel {
+  background:#080704;
+  border-radius:10px;
+  padding:12px;
+  box-shadow:inset 0 0 24px rgba(0,0,0,0.9),0 0 12px rgba(212,168,67,0.06);
+  position:relative;
+}
+.tv-screen {
+  position:relative;
+  aspect-ratio:16/9;
+  overflow:hidden;
+  border-radius:6px;
+  background:#000;
+}
+.tv-screen iframe { width:100%;height:100%;border:none;display:block;position:relative;z-index:1; }
+
+/* Scanlines */
+.scan-lines {
+  position:absolute;inset:0;z-index:2;pointer-events:none;border-radius:6px;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.2) 2px,rgba(0,0,0,0.2) 4px);
+}
+/* CRT corner vignette */
+.tv-screen::after {
+  content:'';position:absolute;inset:0;z-index:3;pointer-events:none;border-radius:6px;
+  background:radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,0.55) 100%);
+}
+/* Static switching */
+.static-layer {
+  position:absolute;inset:0;z-index:4;pointer-events:none;border-radius:6px;opacity:0;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+  background-size:200px 200px;
+}
+@keyframes staticFlash { 0%{opacity:0}15%{opacity:.8}35%{opacity:.4}55%{opacity:.9}75%{opacity:.3}90%{opacity:.7}100%{opacity:0} }
+.switching .static-layer { animation:staticFlash .45s ease forwards; }
+.switching iframe { opacity:0; transition:opacity .1s; }
+
+/* TV BOTTOM BAR */
+.tv-bottom { display:flex; justify-content:space-between; align-items:center; padding:.5rem 0 0; margin-top:.4rem; }
+.tv-brand-text { font-family:var(--display); font-size:12px; color:#d4a843; letter-spacing:4px; text-shadow:0 0 8px rgba(212,168,67,0.5); }
+.tv-indicators { display:flex; gap:8px; align-items:center; }
+.tv-led { width:8px;height:8px;border-radius:50%;background:#d4a843;box-shadow:0 0 8px #d4a843;animation:livePulse 1.2s infinite; }
+.tv-knobs { display:flex; gap:8px; }
+.tv-knob { width:20px;height:20px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#3a2e18,#1a1508);border:1px solid #2a2010;box-shadow:0 2px 4px rgba(0,0,0,0.6); }
+.tv-stand { width:55px;height:14px;background:linear-gradient(145deg,#2e2518,#1a1508);border-radius:0 0 6px 6px;margin:0 auto; }
+
+/* REMOTE CONTROL */
+.remote {
+  width:90px;flex-shrink:0;
+  background:linear-gradient(160deg,#1e1c14,#141208,#1e1c14);
+  border-radius:12px 12px 20px 20px;
+  padding:12px 10px 20px;
+  box-shadow:0 12px 40px rgba(0,0,0,0.8),inset 0 1px 0 rgba(255,255,255,0.04);
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  border:1px solid #2a2010;
+  position:sticky;top:calc(var(--nav-h) + var(--ch-bar-h) + 10px);
+}
+.remote-brand { font-family:var(--display);font-size:7px;color:#5a4a2a;letter-spacing:2px;margin-bottom:2px; }
+.remote-led { width:5px;height:5px;border-radius:50%;background:#d4a843;box-shadow:0 0 5px #d4a843;margin-bottom:4px; }
+.remote-channels { display:flex;flex-direction:column;gap:5px;width:100%; }
+.remote-label { font-family:var(--mono);font-size:6px;letter-spacing:.1em;color:#5a4a2a;text-align:center;text-transform:uppercase;margin-bottom:2px; }
+.rmt-btn {
+  width:100%;padding:5px 4px;border-radius:6px;border:1px solid #2a2010;
+  background:linear-gradient(145deg,#221e12,#161410);
+  color:#8a7a4a;font-family:var(--mono);font-size:7px;letter-spacing:.04em;
+  cursor:pointer;transition:all .1s;text-align:center;display:flex;align-items:center;gap:4px;
+  box-shadow:0 2px 4px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.03);
+  -webkit-tap-highlight-color:transparent;
+}
+.rmt-btn:hover { background:linear-gradient(145deg,#2e2818,#1e1a10); color:#c8a060; border-color:#3a3018; }
+.rmt-btn:active { transform:scale(0.95); box-shadow:0 1px 2px rgba(0,0,0,0.5),inset 0 1px 2px rgba(0,0,0,0.3); }
+.rmt-btn.active-ch { border-color:#d4a843; color:#d4a843; background:linear-gradient(145deg,#2a2412,#1a1808); box-shadow:0 0 8px rgba(212,168,67,0.15),0 2px 4px rgba(0,0,0,0.5); }
+.rmt-num { font-family:var(--display);font-size:9px;color:inherit; }
+.rmt-divider { width:80%;height:1px;background:#2a2010;margin:2px 0; }
+.rmt-power { width:32px;height:32px;border-radius:50%;border:2px solid #3a2010;background:radial-gradient(circle at 40% 35%,#2a1a10,#140e08);color:#8a4a2a;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;box-shadow:0 2px 6px rgba(0,0,0,0.6); }
+.rmt-power:hover { border-color:#d4a843;color:#d4a843;box-shadow:0 0 10px rgba(212,168,67,0.2); }
+.rmt-vol { display:flex;gap:4px; }
+.rmt-vol-btn { flex:1;padding:4px;border-radius:4px;border:1px solid #2a2010;background:#161410;color:#5a4a2a;font-family:var(--mono);font-size:10px;cursor:pointer;text-align:center;transition:.1s; }
+.rmt-vol-btn:hover { color:#c8a060;border-color:#3a3018; }
