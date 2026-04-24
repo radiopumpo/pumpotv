@@ -5,12 +5,11 @@
 const AIChannel = {
   model: 'gemini',
 
-  SYSTEM: `You are a video curator for PumpoTV, a web TV platform that embeds YouTube videos.
-Your job: given a user's request, return a JSON array of 15 YouTube videos that match it.
+  SYSTEM: `Return ONLY a valid JSON array of 15 YouTube video objects. No explanation. No markdown. No text. Just the array starting with [ and ending with ].
 
-You MUST return ONLY a raw JSON array — no explanation, no markdown, no code fences, no preamble, no text before or after the array. Start your response with [ and end with ].
+Each object must be exactly: {"id":"YOUTUBE_ID","title":"Title","duration":123}
 
-CRITICAL RULES:
+RULES:
 1. Only suggest videos from channels known to allow embedding: TED Talks, Vevo, official artist channels, cooking YouTubers (Joshua Weissman, Bon Appétit, Babish, Gordon Ramsay's official channel), documentary channels that own their content, lo-fi/ambient music streams, educational channels, comedy sketches from official channels.
 2. NEVER suggest: recent sports events, major label music videos from VEVO (they often block embed), news clips, movies, TV show episodes, or any content likely behind DRM.
 3. Return ONLY a valid JSON array. No markdown, no explanation, no code fences.
@@ -109,37 +108,47 @@ Return format example:
   },
 
   async _callGemini(key, prompt) {
+    // Embed instructions directly in user message — most reliable for JSON forcing
+    const fullPrompt = this.SYSTEM + '\n\nUser request: ' + prompt + '\n\nReturn the JSON array now:';
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          system_instruction: { parts: [{ text: this.SYSTEM }] },
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.4, maxOutputTokens: 2000 }
+          contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
+          generationConfig: {
+            temperature: 0.3,
+            maxOutputTokens: 2000,
+            response_mime_type: 'application/json',
+          }
         })
       }
     );
     if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e?.error?.message || `HTTP ${res.status}`); }
     const data = await res.json();
+    console.log('[PumpoPicksGeminiRaw]', JSON.stringify(data).slice(0, 400));
     return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
   },
 
   async _callClaude(key, prompt) {
+    const fullPrompt = this.SYSTEM + '\n\nUser request: ' + prompt + '\n\nReturn the JSON array now, starting with [:';
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 2000,
-        system: this.SYSTEM,
-        messages: [{ role: 'user', content: prompt }]
+        messages: [
+          { role: 'user', content: fullPrompt },
+          { role: 'assistant', content: '[' }
+        ]
       })
     });
     if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e?.error?.message || `HTTP ${res.status}`); }
     const data = await res.json();
-    return data.content?.[0]?.text || '';
+    // Claude was prefilled with '[', so prepend it back
+    return '[' + (data.content?.[0]?.text || '');
   },
 
   _setStatus(msg) {
