@@ -1,1 +1,8 @@
-
+[
+  {"id":"main",    "num":1,"name":"PumpoTV 24/7",    "icon":"📺","color":"#ff0080","playlist":"playlist-main.json"},
+  {"id":"sports",  "num":2,"name":"Pumpo's Sports",  "icon":"⚽","color":"#40e0d0","playlist":"playlist-sports.json"},
+  {"id":"docs",    "num":3,"name":"Pumpo's Docs",    "icon":"🎓","color":"#9b59ff","playlist":"playlist-docs.json"},
+  {"id":"kitchen", "num":4,"name":"Pumpo's Kitchen", "icon":"🍳","color":"#ffaa00","playlist":"playlist-kitchen.json"},
+  {"id":"ads",     "num":5,"name":"Pumpo's Ads",     "icon":"📣","color":"#e05050","playlist":"playlist-ads.json"},
+  {"id":"foryou",  "num":6,"name":"Pumpo Picks",     "icon":"✨","color":"#40b870","playlist":"playlist-foryou.json","ai":true}
+]
