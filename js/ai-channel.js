@@ -58,8 +58,16 @@ Return format example:
       // Extract first JSON array even if model added surrounding text
       const arrStart = clean.indexOf('[');
       const arrEnd = clean.lastIndexOf(']');
-      if (arrStart === -1 || arrEnd === -1) throw new Error('No JSON array found in response');
-      clean = clean.slice(arrStart, arrEnd + 1);
+      if (arrStart === -1) throw new Error('No JSON array found in response');
+      // If truncated (no closing bracket), close the array cleanly
+      if (arrEnd === -1 || arrEnd < arrStart) {
+        // Find last complete object (last closing brace before truncation)
+        const lastObj = clean.lastIndexOf('}', clean.length);
+        clean = lastObj > arrStart ? clean.slice(arrStart, lastObj + 1) + ']' : null;
+        if (!clean) throw new Error('Response too truncated to recover');
+      } else {
+        clean = clean.slice(arrStart, arrEnd + 1);
+      }
       // Sanitise control characters that break JSON.parse
       clean = clean.replace(/[\x00-\x1F\x7F]/g, ' ');
       let playlist;
@@ -119,7 +127,7 @@ Return format example:
           contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
           generationConfig: {
             temperature: 0.3,
-            maxOutputTokens: 2000,
+            maxOutputTokens: 4000,
             response_mime_type: 'application/json',
           }
         })
